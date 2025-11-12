@@ -1,6 +1,6 @@
-[Process 0] [Time 1762790304658710216] Lock taken
-[Process 0] [Time 1762790305659214283] Lock released
-[Process 1] [Time 1762790305861320804] Lock taken
-[Process 1] [Time 1762790306862253345] Lock released
-[Process 2] [Time 1762790307063089585] Lock taken
-[Process 2] [Time 1762790308063872593] Lock released
+[Process 0] [Time 1762887680644457224] Lock taken
+[Process 0] [Time 1762887681649791050] Lock released
+[Process 2] [Time 1762887681756839675] Lock taken
+[Process 2] [Time 1762887682763231849] Lock released
+[Process 1] [Time 1762887682868316546] Lock taken
+[Process 1] [Time 1762887683874364614] Lock released

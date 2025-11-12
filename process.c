@@ -45,6 +45,7 @@ Compile:
 
 int N = 0;
 int my_pid = -1;
+int total_locks = 0; /* total number of Lock instructions in the input file (global termination) */
 
 /* Lamport clock */
 int lc = 0;
@@ -360,6 +361,15 @@ void run_instructions(const char *filename) {
     fclose(f);
 }
 
+/* Return the sum of releases_seen[0..N-1] (thread-safe) */
+int total_releases_seen(void) {
+    int s = 0;
+    pthread_mutex_lock(&rel_m);
+    for (int i = 0; i < N; ++i) s += releases_seen[i];
+    pthread_mutex_unlock(&rel_m);
+    return s;
+}
+
 int main(int argc, char **argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <id> <input_file>\n", argv[0]);
@@ -373,6 +383,24 @@ int main(int argc, char **argv) {
     if (!f) { perror("open"); return 1; }
     if (fscanf(f, "%d", &N) != 1) { fprintf(stderr, "bad input\n"); return 1; }
     fclose(f);
+    /* Count total number of Lock instructions in the input file (for termination) */
+    {
+        FILE *ff = fopen(infile, "r");
+        if (ff) {
+            char *line = NULL; size_t len = 0; ssize_t r;
+            /* skip first line with N */
+            r = getline(&line, &len, ff);
+            (void)r;
+            while ((r = getline(&line, &len, ff)) != -1) {
+                if (r <= 1) continue;
+                int target; char cmd[64]; int arg;
+                int parsed = sscanf(line, "%d %63s %d", &target, cmd, &arg);
+                if (parsed >= 2 && strcmp(cmd, "Lock") == 0) total_locks++;
+            }
+            free(line);
+            fclose(ff);
+        }
+    }
     if (N <= 0 || N > MAX_PEERS) { fprintf(stderr, "bad N\n"); return 1; }
 
     /* init release counters */
@@ -397,8 +425,16 @@ int main(int argc, char **argv) {
     /* Run instructions (blocks until finished) */
     run_instructions(infile);
 
-    /* allow messages propagate, then exit */
-    sleep(1);
+    /* Wait for global termination: all Lock instructions have produced a Release
+       message which every process should observe. This prevents processes that
+       finished their own instructions from exiting early and therefore not
+       replying to future REQ messages from peers. */
+    while (total_releases_seen() < total_locks) {
+        usleep(100000);
+    }
+
+    /* allow a brief moment for last messages to settle, then exit */
+    usleep(200000);
     printf("[proc %d] finished, exiting\n", my_pid);
     fflush(stdout);
     return 0;
