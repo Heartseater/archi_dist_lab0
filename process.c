@@ -1,29 +1,3 @@
-/*
-process.c
-
-C implementation of the Lamport-based distributed lock (minimal, for local testing).
-Implements the pseudocode in the README:
- - Request: broadcast REQ and add own request to local queue
- - Receive Request: add to queue and reply ACK
- - Release: remove from queue and broadcast REL
- - Receive Release: remove matching request from queue
- - Grant condition: own request is at head of queue AND ACKs from all processes with lc >= request lc
-
-Important:
- - This program CALLS the existing ./critical binary exactly as provided in the repo:
-     ./critical <process id> <sleep duration>
-   Do NOT modify critical.c.
- - Usage:
-     ./process <id> <input_file>
-   The same input_file is given to all processes. The first line of input_file is N.
- - Networking:
-   Uses localhost TCP. For simplicity each outgoing message opens a short connection to the target
-   (REQ/ACK/REL). Each process listens on BASE_PORT + pid.
-
-Compile:
-  gcc -pthread Lab01/process.c -o Lab01/process
-
-*/
 #define _GNU_SOURCE
 #include <arpa/inet.h>
 #include <errno.h>
